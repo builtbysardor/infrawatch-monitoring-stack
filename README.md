@@ -20,6 +20,7 @@
 - [Useful Commands](#useful-commands)
 - [Ports Reference](#ports-reference)
 - [Troubleshooting](#troubleshooting)
+- [Project Presentation](#project-presentation)
 
 ---
 
@@ -362,6 +363,14 @@ Popular exporters to add:
 - **redis_exporter** — Redis metrics
 - **nginx-prometheus-exporter** — NGINX metrics
 - **blackbox_exporter** — HTTP/TCP endpoint uptime checks
+
+---
+
+## 📊 Project Presentation
+
+📊 Full DevOps presentation:
+
+[Open InfraWatch Presentation](presentation/infrawatch-presentation.pdf)
 
 ---
 
