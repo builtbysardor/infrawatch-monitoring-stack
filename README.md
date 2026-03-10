@@ -371,4 +371,4 @@ MIT License — free to use, modify, and distribute.
 
 ---
 
-*Built with ❤️ by the InfraWatch project.*
+*Built with Sardor by the InfraWatch project.*
