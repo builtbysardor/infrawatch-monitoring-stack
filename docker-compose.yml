@@ -1,0 +1,137 @@
+# =============================================================
+# InfraWatch — Linux Server Monitoring Stack
+# Docker Compose Configuration
+#
+# This file defines and connects all three monitoring services:
+#   1. node_exporter  — collects Linux system metrics
+#   2. prometheus     — stores and queries those metrics
+#   3. grafana        — visualizes metrics in dashboards
+#
+# Run everything with a single command:
+#   docker compose up -d
+# =============================================================
+
+version: "3.8"
+
+# ── Named volumes ─────────────────────────────────────────────
+# Docker-managed volumes keep data alive between restarts.
+volumes:
+  prometheus_data:   # stores Prometheus time-series database
+  grafana_data:      # stores Grafana dashboards, users, settings
+
+# ── Shared network ────────────────────────────────────────────
+# All containers talk to each other over this private network.
+# Services can reach each other by their service name as hostname
+# (e.g. Prometheus connects to "node_exporter:9100").
+networks:
+  monitoring:
+    driver: bridge
+
+# ── Services ──────────────────────────────────────────────────
+services:
+
+  # ----------------------------------------------------------
+  # NODE EXPORTER
+  # Runs on the host and exposes ~1 000 Linux metrics over HTTP.
+  # Prometheus scrapes this endpoint every 15 seconds.
+  # Metrics include: CPU, RAM, disk I/O, network, uptime, etc.
+  # ----------------------------------------------------------
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: infrawatch_node_exporter
+    restart: unless-stopped
+
+    # Give the container read-only access to key host paths so
+    # it can report real host (not container) metrics.
+    volumes:
+      - /proc:/host/proc:ro       # process & kernel info
+      - /sys:/host/sys:ro         # hardware/kernel stats
+      - /:/host/rootfs:ro         # filesystem usage
+
+    # Tell node_exporter where to find the host paths above.
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/host/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+    ports:
+      - "9100:9100"   # Metrics endpoint: http://localhost:9100/metrics
+
+    networks:
+      - monitoring
+
+  # ----------------------------------------------------------
+  # PROMETHEUS
+  # Time-series database and metrics scraper.
+  # Reads prometheus/prometheus.yml to know WHAT to scrape
+  # and HOW often. Stores data in a compressed local database.
+  # Query interface: http://localhost:9090
+  # ----------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: infrawatch_prometheus
+    restart: unless-stopped
+
+    volumes:
+      # Mount our custom config (read-only — Prometheus reads it)
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Persist the metrics database across restarts
+      - prometheus_data:/prometheus
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"   # keep 15 days of data
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"               # allows hot-reload of config
+
+    ports:
+      - "9090:9090"   # Web UI: http://localhost:9090
+
+    # Wait for node_exporter to be up before starting
+    depends_on:
+      - node_exporter
+
+    networks:
+      - monitoring
+
+  # ----------------------------------------------------------
+  # GRAFANA
+  # Visualization layer. Connects to Prometheus as a data source
+  # and renders beautiful dashboards from PromQL queries.
+  # Dashboard UI: http://localhost:3000
+  # Default login: admin / infrawatch
+  # ----------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: infrawatch_grafana
+    restart: unless-stopped
+
+    # Environment variables configure Grafana on first boot.
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=infrawatch     # change in production!
+      - GF_USERS_ALLOW_SIGN_UP=false              # disable public registration
+      - GF_SERVER_GRAFANA_NET_URL=http://localhost:3000
+      - GF_LOG_LEVEL=warn                         # reduce log noise
+
+    volumes:
+      # Persist all Grafana data (dashboards, plugins, users)
+      - grafana_data:/var/lib/grafana
+      # Auto-provision the Prometheus data source on startup
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      # Auto-provision the dashboard loader on startup
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      # The actual dashboard JSON file
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    ports:
+      - "3000:3000"   # Web UI: http://localhost:3000
+
+    depends_on:
+      - prometheus
+
+    networks:
+      - monitoring

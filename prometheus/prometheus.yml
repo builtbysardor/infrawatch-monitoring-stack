@@ -1,0 +1,54 @@
+# =============================================================
+# Prometheus Configuration — infrawatch/prometheus/prometheus.yml
+#
+# This file tells Prometheus:
+#   • Global timing (how often to scrape, timeouts)
+#   • Which targets (services) to collect metrics from
+# =============================================================
+
+global:
+  # How frequently Prometheus scrapes each target
+  scrape_interval: 15s
+
+  # How long Prometheus waits for a scrape response before timing out
+  scrape_timeout: 10s
+
+  # How often Prometheus evaluates alerting/recording rules
+  evaluation_interval: 15s
+
+# ── Scrape Jobs ───────────────────────────────────────────────
+# Each "job" is a group of targets Prometheus will scrape.
+scrape_configs:
+
+  # ----------------------------------------------------------
+  # Job 1: Prometheus itself
+  # Prometheus exposes its own metrics (scrape durations, etc.)
+  # This is useful for monitoring the monitoring system itself.
+  # ----------------------------------------------------------
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          instance: "prometheus-server"
+
+  # ----------------------------------------------------------
+  # Job 2: Node Exporter
+  # Collects Linux host metrics: CPU, RAM, disk, network, uptime.
+  # "node_exporter" is the Docker service name — Docker's internal
+  # DNS resolves it automatically inside the "monitoring" network.
+  # ----------------------------------------------------------
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["node_exporter:9100"]
+        labels:
+          instance: "linux-host"
+          environment: "production"
+
+  # ----------------------------------------------------------
+  # Job 3: Grafana (optional — monitors Grafana health)
+  # ----------------------------------------------------------
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+        labels:
+          instance: "grafana-server"
