@@ -3,7 +3,7 @@
 > A production-grade observability platform built one component at a time over 180 days.
 > Real DevOps engineering: metrics, logs, alerting, WebSockets, task queues, RBAC, and ML anomaly detection — all in Docker.
 
-![Progress](https://img.shields.io/badge/Progress-Day_150_of_180-blue?style=flat-square)
+![Progress](https://img.shields.io/badge/Progress-Day_180_of_180-blue?style=flat-square)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat&logo=grafana&logoColor=white)
@@ -126,17 +126,17 @@ InfraWatch is a **live engineering portfolio** — each day, one new production-
 ![Loki Demo](demos/demo_05_loki_logs.gif)
 
 ### Real-time WebSocket Feed (Day 11)
-[![Coming Soon](https://img.shields.io/badge/Coming_Soon-555555?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
+[![Complete](https://img.shields.io/badge/WebSocket_Streaming-Complete-3fb950?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
 
 > _Live metric streaming via WebSocket — dashboard updates without page refresh._
 
 ### Celery Task Queue & Scheduler (Day 31–35)
-[![Coming Soon](https://img.shields.io/badge/Coming_Soon-555555?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
+[![Complete](https://img.shields.io/badge/Celery_Task_Queue-Complete-3fb950?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
 
 > _Distributed task execution: scheduled health checks, periodic scrapes, Celery Beat._
 
 ### Auto-Remediation Engine (Day 45)
-[![Coming Soon](https://img.shields.io/badge/Coming_Soon-555555?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
+[![Complete](https://img.shields.io/badge/Auto_Remediation-Complete-3fb950?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
 
 > _When an alert fires, InfraWatch automatically restarts the unhealthy container._
 
