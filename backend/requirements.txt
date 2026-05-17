@@ -17,3 +17,8 @@ passlib[bcrypt]>=1.7.4,<2.0.0
 sqlalchemy>=2.0.0,<2.1.0
 alembic>=1.13.0,<1.15.0
 psycopg2-binary>=2.9.0,<3.0.0
+
+# Phase 6 — ML Anomaly Detection
+scikit-learn>=1.4.0,<2.0.0
+numpy>=1.26.0,<3.0.0
+pandas>=2.2.0,<3.0.0

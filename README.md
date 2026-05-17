@@ -29,7 +29,7 @@ InfraWatch is a **live engineering portfolio** — each day, one new production-
 | Task Queue & Automation | 31–60 | Celery, Redis, scheduled jobs, auto-remediation | ✅ Complete |
 | Security & RBAC | 61–90 | JWT auth, role-based access control, audit logging | ✅ Complete |
 | Database & Persistence | 91–120 | PostgreSQL, SQLAlchemy, historical analytics | ✅ Complete |
-| ML Anomaly Detection | 121–150 | Predictive alerting, isolation forest, trend analysis | ⏭ Skipped |
+| ML Anomaly Detection | 121–150 | Predictive alerting, isolation forest, trend analysis | ✅ Complete |
 | Production Hardening | 151–180 | Nginx, Kubernetes, GitHub Actions CI/CD | ✅ Complete |
 
 ---
@@ -140,10 +140,12 @@ InfraWatch is a **live engineering portfolio** — each day, one new production-
 
 > _When an alert fires, InfraWatch automatically restarts the unhealthy container._
 
-### ML Anomaly Detection (Day 121)
-[![Coming Soon](https://img.shields.io/badge/Coming_Soon-555555?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
+### ML Anomaly Detection (Phase 6)
+[![Complete](https://img.shields.io/badge/Phase_6-Complete-3fb950?style=for-the-badge)](https://github.com/builtbysardor/infrawatch)
 
 > _Predictive alerting: detect CPU/RAM anomalies before thresholds are breached._
+> Three detection methods run every 5 minutes via Celery:
+> **Z-score** (statistical baseline) · **IQR** (interquartile-range fences) · **Isolation Forest** (scikit-learn multivariate ML model)
 
 ---
 
@@ -404,15 +406,15 @@ graph TB
 - [ ] **Day 115** — Annotation storage for Grafana
 - [ ] **Day 120** — Data export (CSV, JSON) endpoints
 
-### Phase 6: ML & Anomaly Detection (Days 121–150) 📋
+### Phase 6: ML & Anomaly Detection (Days 121–150) ✅
 
-- [ ] **Day 121** — Z-score baseline anomaly detection
-- [ ] **Day 125** — IQR-based outlier detection
-- [ ] **Day 130** — Predictive alerting: fire before breach
-- [ ] **Day 135** — Isolation Forest for multivariate anomalies
-- [ ] **Day 140** — Model training pipeline on Prometheus data
-- [ ] **Day 145** — Anomaly annotations in Grafana
-- [ ] **Day 150** — Anomaly scoring dashboard
+- [x] **Day 121** — Z-score baseline anomaly detection
+- [x] **Day 125** — IQR-based outlier detection
+- [x] **Day 130** — Predictive alerting: fire before breach
+- [x] **Day 135** — Isolation Forest for multivariate anomalies
+- [x] **Day 140** — Model training pipeline on Prometheus data (Celery beat, 5 min interval)
+- [x] **Day 145** — Anomaly event persistence in PostgreSQL
+- [x] **Day 150** — Anomaly scoring API (`/api/anomalies/score`, `/api/anomalies/summary`)
 
 ### Phase 7: Production Hardening (Days 151–180) 📋
 

@@ -1,12 +1,13 @@
 import logging
 import os
 import subprocess
+from datetime import datetime, timedelta
 
 import httpx
 
 from celery_app import celery_app
 from database import SessionLocal
-from models import AlertHistory, MetricSnapshot
+from models import AlertHistory, AnomalyEvent, MetricSnapshot
 
 log = logging.getLogger("infrawatch.tasks")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://prometheus:9090")
@@ -80,6 +81,61 @@ def snapshot_alerts():
             db.close()
     except Exception as exc:
         log.error("snapshot_alerts failed: %s", exc)
+
+
+@celery_app.task(name="tasks.detect_anomalies", bind=True, max_retries=2)
+def detect_anomalies(self):
+    """Phase 6: Run ML anomaly detection on the last 6 hours of metric snapshots."""
+    try:
+        from anomaly import analyze_snapshots
+
+        db = SessionLocal()
+        try:
+            since = datetime.utcnow() - timedelta(hours=6)
+            snapshots = (
+                db.query(MetricSnapshot)
+                .filter(MetricSnapshot.timestamp >= since)
+                .order_by(MetricSnapshot.timestamp.asc())
+                .all()
+            )
+
+            if len(snapshots) < 5:
+                log.info("Anomaly detection skipped — only %d snapshots", len(snapshots))
+                return {"skipped": True, "reason": "insufficient_data", "count": len(snapshots)}
+
+            result = analyze_snapshots(snapshots)
+
+            saved = 0
+            for r in result["per_metric"]:
+                if r["is_anomaly"]:
+                    db.add(AnomalyEvent(
+                        metric=r["metric"],
+                        method=",".join(r["methods_triggered"]),
+                        current_value=r["current_value"],
+                        score=r["combined_score"],
+                        detail=f"zscore={r['zscore']}, iqr_score={r['iqr_score']}",
+                    ))
+                    saved += 1
+
+            if_res = result.get("isolation_forest")
+            if if_res and if_res["is_anomaly"]:
+                db.add(AnomalyEvent(
+                    metric="multivariate",
+                    method="isolation_forest",
+                    current_value=None,
+                    score=if_res["score"],
+                    detail="Multivariate anomaly via Isolation Forest",
+                ))
+                saved += 1
+
+            db.commit()
+            log.info("detect_anomalies: %d events saved (any_anomaly=%s)", saved, result["any_anomaly"])
+            return {**result, "events_saved": saved}
+        finally:
+            db.close()
+    except Exception as exc:
+        log.error("detect_anomalies failed: %s", exc)
+        raise self.retry(exc=exc, countdown=30)
 
 
 @celery_app.task(name="tasks.check_container_health")

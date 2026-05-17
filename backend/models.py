@@ -41,3 +41,15 @@ class AuditLog(Base):
     status_code = Column(Integer)
     ip_address = Column(String(50), nullable=True)
     duration_ms = Column(Float, nullable=True)
+
+
+class AnomalyEvent(Base):
+    __tablename__ = "anomaly_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    metric = Column(String(100))        # e.g. "cpu_usage_percent" or "multivariate"
+    method = Column(String(100))        # "zscore", "iqr", "zscore,iqr", "isolation_forest"
+    current_value = Column(Float, nullable=True)
+    score = Column(Float, nullable=True)
+    detail = Column(Text, nullable=True)

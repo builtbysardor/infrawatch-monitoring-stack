@@ -31,5 +31,9 @@ celery_app.conf.update(
             "task": "tasks.check_container_health",
             "schedule": 30.0,
         },
+        "detect-anomalies-300s": {
+            "task": "tasks.detect_anomalies",
+            "schedule": 300.0,
+        },
     },
 )

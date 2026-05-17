@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from auth import authenticate_user, create_access_token, get_current_user, require_admin
 from database import get_db, init_db
-from models import AlertHistory, AuditLog, MetricSnapshot
+from models import AlertHistory, AnomalyEvent, AuditLog, MetricSnapshot
 
 logging.basicConfig(
     level=logging.INFO,
@@ -589,4 +589,97 @@ async def analytics_summary(
         "disk": {
             "avg_percent": round(agg.disk_avg or 0, 2),
         },
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# PHASE 6 — ML & Anomaly Detection
+# ══════════════════════════════════════════════════════════════
+
+@app.get("/api/anomalies", tags=["Anomaly Detection"])
+async def get_anomalies(
+    hours: int = 24,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """Recent anomaly events persisted by the Celery detector (requires auth)."""
+    if not DB_ENABLED:
+        raise HTTPException(status_code=503, detail="Database not enabled")
+    since = datetime.utcnow() - timedelta(hours=hours)
+    rows = (
+        db.query(AnomalyEvent)
+        .filter(AnomalyEvent.timestamp >= since)
+        .order_by(AnomalyEvent.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "hours": hours,
+        "count": len(rows),
+        "events": [
+            {
+                "id": r.id,
+                "timestamp": r.timestamp.isoformat(),
+                "metric": r.metric,
+                "method": r.method,
+                "current_value": r.current_value,
+                "score": r.score,
+                "detail": r.detail,
+            }
+            for r in rows
+        ],
+    }
+
+
+@app.get("/api/anomalies/score", tags=["Anomaly Detection"])
+async def live_anomaly_score(
+    hours: int = 6,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """Run anomaly detection live on recent snapshots and return the result (requires auth)."""
+    if not DB_ENABLED:
+        raise HTTPException(status_code=503, detail="Database not enabled")
+    from anomaly import analyze_snapshots
+    since = datetime.utcnow() - timedelta(hours=hours)
+    snapshots = (
+        db.query(MetricSnapshot)
+        .filter(MetricSnapshot.timestamp >= since)
+        .order_by(MetricSnapshot.timestamp.asc())
+        .all()
+    )
+    if len(snapshots) < 5:
+        return {
+            "status": "insufficient_data",
+            "sample_count": len(snapshots),
+            "message": f"Need at least 5 snapshots, have {len(snapshots)}",
+        }
+    result = analyze_snapshots(snapshots)
+    return {"status": "ok", **result}
+
+
+@app.get("/api/anomalies/summary", tags=["Anomaly Detection"])
+async def anomaly_summary(
+    hours: int = 24,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """Aggregate anomaly statistics over a time window (requires auth)."""
+    if not DB_ENABLED:
+        raise HTTPException(status_code=503, detail="Database not enabled")
+    since = datetime.utcnow() - timedelta(hours=hours)
+    rows = db.query(AnomalyEvent).filter(AnomalyEvent.timestamp >= since).all()
+
+    by_metric: dict = {}
+    for r in rows:
+        by_metric.setdefault(r.metric, {"count": 0, "max_score": 0.0})
+        by_metric[r.metric]["count"] += 1
+        if r.score and r.score > by_metric[r.metric]["max_score"]:
+            by_metric[r.metric]["max_score"] = r.score
+
+    return {
+        "period_hours": hours,
+        "total_anomaly_events": len(rows),
+        "by_metric": by_metric,
     }
