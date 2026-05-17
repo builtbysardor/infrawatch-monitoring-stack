@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import pathlib
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -311,109 +312,12 @@ async def sse_metrics():
     )
 
 
-DASHBOARD_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>InfraWatch — Live Dashboard</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; padding: 24px; }
-  h1 { font-size: 1.5rem; color: #58a6ff; margin-bottom: 4px; }
-  .subtitle { color: #8b949e; font-size: 0.85rem; margin-bottom: 24px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
-  .card-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-  .card-value { font-size: 2rem; font-weight: 700; color: #f0f6fc; }
-  .card-unit { font-size: 0.85rem; color: #8b949e; margin-left: 4px; }
-  .bar { height: 4px; background: #21262d; border-radius: 2px; margin-top: 10px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
-  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; margin-top: 20px; color: #8b949e; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .error { color: #f85149; }
-</style>
-</head>
-<body>
-<h1>InfraWatch</h1>
-<p class="subtitle">Live infrastructure metrics — updates every 2 seconds via WebSocket</p>
-<div class="grid">
-  <div class="card">
-    <div class="card-label">CPU Usage</div>
-    <div><span class="card-value" id="cpu">—</span><span class="card-unit">%</span></div>
-    <div class="bar"><div class="bar-fill" id="cpu-bar" style="background:#58a6ff;width:0%"></div></div>
-  </div>
-  <div class="card">
-    <div class="card-label">RAM Usage</div>
-    <div><span class="card-value" id="ram">—</span><span class="card-unit">%</span></div>
-    <div class="bar"><div class="bar-fill" id="ram-bar" style="background:#3fb950;width:0%"></div></div>
-  </div>
-  <div class="card">
-    <div class="card-label">Disk Usage</div>
-    <div><span class="card-value" id="disk">—</span><span class="card-unit">%</span></div>
-    <div class="bar"><div class="bar-fill" id="disk-bar" style="background:#f0883e;width:0%"></div></div>
-  </div>
-  <div class="card">
-    <div class="card-label">Network In</div>
-    <div><span class="card-value" id="net_in">—</span><span class="card-unit">KB/s</span></div>
-    <div class="bar"><div class="bar-fill" id="netin-bar" style="background:#a371f7;width:0%"></div></div>
-  </div>
-  <div class="card">
-    <div class="card-label">Network Out</div>
-    <div><span class="card-value" id="net_out">—</span><span class="card-unit">KB/s</span></div>
-    <div class="bar"><div class="bar-fill" id="netout-bar" style="background:#f85149;width:0%"></div></div>
-  </div>
-  <div class="card">
-    <div class="card-label">Uptime</div>
-    <div><span class="card-value" id="uptime">—</span><span class="card-unit">h</span></div>
-    <div class="bar"><div class="bar-fill" id="uptime-bar" style="background:#39d353;width:100%"></div></div>
-  </div>
-</div>
-<div class="status"><div class="dot" id="dot"></div><span id="status-text">Connecting…</span></div>
-<script>
-  const host = location.host;
-  const ws = new WebSocket(`ws://${host}/ws/metrics`);
-  const dot = document.getElementById('dot');
-  const statusText = document.getElementById('status-text');
-
-  function set(id, val, decimals=1) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val !== null && val !== undefined ? Number(val).toFixed(decimals) : '—';
-  }
-  function setBar(id, pct) {
-    const el = document.getElementById(id);
-    if (el) el.style.width = Math.min(100, Math.max(0, pct || 0)) + '%';
-  }
-
-  ws.onopen = () => {
-    dot.style.background = '#3fb950';
-    statusText.textContent = 'Live — WebSocket connected';
-  };
-  ws.onmessage = (e) => {
-    const d = JSON.parse(e.data);
-    if (d.error) { statusText.textContent = 'Error: ' + d.error; return; }
-    set('cpu', d.cpu_usage_percent);
-    set('ram', d.ram_usage_percent);
-    set('disk', d.disk_usage_percent);
-    set('net_in', d.network_in_bytes_sec !== null ? d.network_in_bytes_sec / 1024 : null);
-    set('net_out', d.network_out_bytes_sec !== null ? d.network_out_bytes_sec / 1024 : null);
-    set('uptime', d.uptime_seconds !== null ? d.uptime_seconds / 3600 : null, 0);
-    setBar('cpu-bar', d.cpu_usage_percent);
-    setBar('ram-bar', d.ram_usage_percent);
-    setBar('disk-bar', d.disk_usage_percent);
-    setBar('netin-bar', d.network_in_bytes_sec ? d.network_in_bytes_sec / 10240 : 0);
-    setBar('netout-bar', d.network_out_bytes_sec ? d.network_out_bytes_sec / 10240 : 0);
-    const ts = new Date(d.timestamp + 'Z').toLocaleTimeString();
-    statusText.textContent = `Live — last update ${ts}`;
-  };
-  ws.onclose = () => {
-    dot.style.background = '#f85149';
-    statusText.textContent = 'Disconnected — reload to reconnect';
-  };
-</script>
-</body>
-</html>"""
+_DASHBOARD_PATH = pathlib.Path(__file__).parent / "dashboard.html"
+DASHBOARD_HTML = (
+    _DASHBOARD_PATH.read_text()
+    if _DASHBOARD_PATH.exists()
+    else "<h1 style='font-family:sans-serif;color:#f87171;padding:2rem'>dashboard.html not found</h1>"
+)
 
 
 @app.get("/dashboard", tags=["Streaming"], response_class=HTMLResponse)
