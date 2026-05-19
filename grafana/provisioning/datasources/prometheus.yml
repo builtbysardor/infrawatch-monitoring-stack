@@ -8,8 +8,13 @@
 
 apiVersion: 1
 
+deleteDatasources:
+  - name: Prometheus               # Drop any pre-existing entry so the pinned UID below takes effect
+    orgId: 1
+
 datasources:
   - name: Prometheus               # Display name in Grafana UI
+    uid: prometheus                # Stable UID referenced by provisioned dashboards
     type: prometheus               # Plugin type
     access: proxy                  # Grafana backend proxies requests to Prometheus
     url: http://prometheus:9090    # Docker service name resolves internally

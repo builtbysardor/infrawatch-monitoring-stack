@@ -116,7 +116,7 @@ def do_screenshots(ctx):
     go(page, f"{GRAFANA_URL}/dashboards", sleep_s=2)
     shot(page, "02_grafana_dashboards.png", "02 Grafana — Dashboard ro'yxati")
 
-    go(page, f"{GRAFANA_URL}/d/infrawatch-linux/infrawatch-linux-server-overview?kiosk=1", sleep_s=6)
+    go(page, f"{GRAFANA_URL}/d/infrawatch-linux-overview/infrawatch-linux-server-overview?kiosk=1", sleep_s=6)
     shot(page, "03_grafana_dashboard_linux.png", "03 Grafana — Linux Server Overview")
 
     go(page, f"{GRAFANA_URL}/d/infrawatch-cadvisor/infrawatch-container-metrics-cadvisor?kiosk=1", sleep_s=6)
@@ -222,7 +222,7 @@ def demo_core_stack(ctx):
         capture_frame(page, frames)
         time.sleep(0.5)
 
-    go(page, f"{GRAFANA_URL}/d/infrawatch-linux/infrawatch-linux-server-overview", sleep_s=5)
+    go(page, f"{GRAFANA_URL}/d/infrawatch-linux-overview/infrawatch-linux-server-overview", sleep_s=5)
     for _ in range(6):
         capture_frame(page, frames)
         time.sleep(0.8)
@@ -248,7 +248,7 @@ def demo_grafana_dashboards(ctx):
     page = ctx.new_page()
 
     grafana_login(page)
-    go(page, f"{GRAFANA_URL}/d/infrawatch-linux/infrawatch-linux-server-overview", sleep_s=5)
+    go(page, f"{GRAFANA_URL}/d/infrawatch-linux-overview/infrawatch-linux-server-overview", sleep_s=5)
     for i in range(8):
         capture_frame(page, frames, scroll_y=i * 300)
         time.sleep(0.6)

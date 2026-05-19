@@ -18,6 +18,20 @@
 
 ---
 
+## Live Demo
+
+### Command Center — Real-time Backend Dashboard
+![Command Center Dashboard](screenshots/00_hero_command_center.png)
+
+> _Custom-built FastAPI dashboard: live SVG gauges, sparklines, container health, alerts. Updates every 2 s via WebSocket._
+
+### Grafana — Container Metrics (cAdvisor)
+![Grafana Container Metrics](screenshots/00_hero_grafana_cadvisor.png)
+
+> _Per-container CPU, memory, network, and filesystem panels — Prometheus + cAdvisor scraped every 15 s._
+
+---
+
 ## The 180-Day Challenge
 
 InfraWatch is a **live engineering portfolio** — each day, one new production-grade infrastructure component is designed, implemented, tested, and shipped inside Docker.
@@ -200,7 +214,7 @@ InfraWatch is a **live engineering portfolio** — each day, one new production-
 ```bash
 make up          # start the stack
 # wait ~30 seconds, then open:
-# Grafana Linux Overview  → http://localhost:3000/d/infrawatch-linux/
+# Grafana Linux Overview  → http://localhost:3000/d/infrawatch-linux-overview/
 # Grafana cAdvisor        → http://localhost:3000/d/infrawatch-cadvisor/
 # Grafana Alerts          → http://localhost:3000/alerting/list
 # Grafana Explore (Loki)  → http://localhost:3000/explore

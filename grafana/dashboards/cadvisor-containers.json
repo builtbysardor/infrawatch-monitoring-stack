@@ -364,7 +364,7 @@
 
     {
       "id": 12,
-      "title": "Container Memory Limit Usage %",
+      "title": "Container Memory Usage % (of host)",
       "type": "bargauge",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -395,7 +395,7 @@
       },
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{name=~\".+\", image!=\"\"} / container_spec_memory_limit_bytes{name=~\".+\", image!=\"\"} * 100 < +Inf",
+          "expr": "container_memory_usage_bytes{name=~\".+\", image!=\"\"} / on() group_left() machine_memory_bytes * 100",
           "legendFormat": "{{ name }}",
           "refId": "A"
         }
